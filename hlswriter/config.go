@@ -24,12 +24,19 @@ func (c Config) New() (HLSWriter, error) {
 		return HLSWriter{}, fmt.Errorf("could not create new media playlist: %w", err)
 	}
 
-	return HLSWriter{
+	hlsWriter := HLSWriter{
 		outputDirectory: c.OutputDirectory,
 		windowSize:      c.WindowSize,
 		windowCapacity:  c.WindowCapacity,
 		msPerSegment:    c.MsPerSegment,
 		filename:        c.Filename,
 		playlist:        playlist,
-	}, nil
+	}
+
+	err = hlsWriter.NewSegmentFile()
+	if err != nil {
+		return hlsWriter, fmt.Errorf("could not start segment file: %w", err)
+	}
+
+	return hlsWriter, nil
 }
