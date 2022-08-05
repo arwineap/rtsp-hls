@@ -28,21 +28,22 @@ type HLSWriter struct {
 	outFile        *os.File
 }
 
-func (h HLSWriter) GetSegmentFilename() string {
+func (h *HLSWriter) GetSegmentFilename() string {
 	return fmt.Sprintf("%04d.ts", h.segmentNumber)
 }
 
-func (h HLSWriter) NewSegmentFile() error {
+func (h *HLSWriter) NewSegmentFile() error {
 	h.segmentNumber++
 
 	segmentName := h.GetSegmentFilename()
 	segmentPath := filepath.Join(h.outputDirectory, segmentName)
-	outFile, err := os.Create(segmentPath)
+	var err error
+	h.outFile, err = os.Create(segmentPath)
 	if err != nil {
 		return fmt.Errorf("could not create new segment file: %w", err)
 	}
 
-	h.tsMuxer = ts.NewMuxer(outFile)
+	h.tsMuxer = ts.NewMuxer(h.outFile)
 
 	// Write header
 	codecData := h.codecs.get()
@@ -56,7 +57,7 @@ func (h HLSWriter) NewSegmentFile() error {
 	return nil
 }
 
-func (h HLSWriter) EndSegmentFile() error {
+func (h *HLSWriter) EndSegmentFile() error {
 	err := h.tsMuxer.WriteTrailer()
 	if err != nil {
 		return fmt.Errorf("unable to write trailer for segment: %w", err)
@@ -80,7 +81,7 @@ func (h HLSWriter) EndSegmentFile() error {
 	return nil
 }
 
-func (h HLSWriter) PurgeOutdatedSegments() error {
+func (h *HLSWriter) PurgeOutdatedSegments() error {
 	// create a lookup table for segments
 	currentSegments := make(map[string]struct{}, len(h.playlist.Segments))
 	for _, segment := range h.playlist.Segments {
@@ -105,7 +106,7 @@ func (h HLSWriter) PurgeOutdatedSegments() error {
 	return nil
 }
 
-func (h HLSWriter) SlidePlaylist() error {
+func (h *HLSWriter) SlidePlaylist() error {
 	h.playlist.Slide(h.GetSegmentFilename(), time.Since(h.segmentStart).Seconds(), "")
 	playlistFile, err := os.Create(filepath.Join(h.outputDirectory, h.filename))
 	if err != nil {
@@ -123,7 +124,7 @@ func (h HLSWriter) SlidePlaylist() error {
 	return nil
 }
 
-func (h HLSWriter) WritePacket(pkt *av.Packet) error {
+func (h *HLSWriter) WritePacket(pkt *av.Packet) error {
 	h.lastPacketTime = time.Now()
 
 	if pkt.IsKeyFrame {
@@ -142,8 +143,15 @@ func (h HLSWriter) WritePacket(pkt *av.Packet) error {
 	return h.tsMuxer.WritePacket(*pkt)
 }
 
-func (h HLSWriter) AddCodecs(newCodecs []av.CodecData) {
+func (h *HLSWriter) AddCodecs(newCodecs []av.CodecData) error {
 	h.codecs.add(newCodecs)
+
+	err := h.tsMuxer.WriteHeader(newCodecs)
+	if err != nil {
+		return fmt.Errorf("could not write header: %w", err)
+	}
+
+	return nil
 }
 
 type codecDataStruct struct {
@@ -152,14 +160,14 @@ type codecDataStruct struct {
 	sync.Mutex
 }
 
-func (c codecDataStruct) add(newCodecs []av.CodecData) {
+func (c *codecDataStruct) add(newCodecs []av.CodecData) {
 	defer c.Unlock()
 	c.Lock()
 
 	c.codecs = append(c.codecs, newCodecs...)
 }
 
-func (c codecDataStruct) get() []av.CodecData {
+func (c *codecDataStruct) get() []av.CodecData {
 	defer c.Unlock()
 	c.Lock()
 

@@ -14,14 +14,14 @@ type Config struct {
 	Filename        string `split_words:"true"`
 }
 
-func (c Config) New() (HLSWriter, error) {
+func (c Config) New() (*HLSWriter, error) {
 	if c.Filename == "" {
 		c.Filename = fmt.Sprintf("%s.m3u8", uuid.NewV4())
 	}
 
 	playlist, err := m3u8.NewMediaPlaylist(c.WindowSize, c.WindowCapacity)
 	if err != nil {
-		return HLSWriter{}, fmt.Errorf("could not create new media playlist: %w", err)
+		return &HLSWriter{}, fmt.Errorf("could not create new media playlist: %w", err)
 	}
 
 	hlsWriter := HLSWriter{
@@ -35,8 +35,8 @@ func (c Config) New() (HLSWriter, error) {
 
 	err = hlsWriter.NewSegmentFile()
 	if err != nil {
-		return hlsWriter, fmt.Errorf("could not start segment file: %w", err)
+		return &hlsWriter, fmt.Errorf("could not start segment file: %w", err)
 	}
 
-	return hlsWriter, nil
+	return &hlsWriter, nil
 }

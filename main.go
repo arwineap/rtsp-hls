@@ -26,6 +26,13 @@ func main() {
 
 	hlsWriter, err := conf.HLS.New()
 
+	if session.CodecData != nil {
+		err = hlsWriter.AddCodecs(session.CodecData)
+		if err != nil {
+			logger.Fatal("could not add initial session codecs", zap.Error(err))
+		}
+	}
+
 	pingStream := time.NewTimer(15 * time.Second)
 	for {
 		select {
@@ -35,7 +42,10 @@ func main() {
 			switch signals {
 			case rtspv2.SignalCodecUpdate:
 				logger.Info("codec update", zap.Any("codec_data", session.CodecData))
-				hlsWriter.AddCodecs(session.CodecData)
+				err = hlsWriter.AddCodecs(session.CodecData)
+				if err != nil {
+					logger.Fatal("unable to add codecs", zap.Error(err))
+				}
 			case rtspv2.SignalStreamRTPStop:
 				logger.Fatal("stream stopped")
 			}
@@ -44,6 +54,7 @@ func main() {
 			if err != nil {
 				logger.Fatal("could not write packet to hlswriter", zap.Error(err))
 			}
+			pingStream.Reset(15 * time.Second)
 		}
 	}
 }
