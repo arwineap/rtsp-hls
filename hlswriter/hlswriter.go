@@ -149,7 +149,7 @@ func (h HLSWriter) AddCodecs(newCodecs []av.CodecData) {
 type codecDataStruct struct {
 	codecs []av.CodecData
 
-	*sync.Mutex
+	sync.Mutex
 }
 
 func (c codecDataStruct) add(newCodecs []av.CodecData) {
