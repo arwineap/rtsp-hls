@@ -1,0 +1,25 @@
+---
+jobs:
+  - name: build
+    plan:
+      - get: git-rtsp-hls
+        trigger: true
+      - put: ctr-rtsp-hls
+        params:
+          build: git-rtsp-hls
+          build_args:
+            BITBUCKET_READ_TOKEN: ((bitbucket-read-token.token))
+
+resources:
+  - name: git-rtsp-hls
+    type: git
+    source:
+      uri: git@bitbucket.org:arwineap/rtsp-hls.git
+      private_key: ((git-credentials.id_rsa))
+  - name: ctr-rtsp-hls
+    type: docker-image
+    icon: docker
+    source:
+      repository: docker.rexcreation.net/rtsp-hls
+      tag: latest
+      insecure_registries: ["docker.rexcreation.net"]
