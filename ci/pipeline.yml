@@ -14,7 +14,7 @@ resources:
   - name: git-rtsp-hls
     type: git
     source:
-      uri: git@bitbucket.org:arwineap/rtsp-hls.git
+      uri: git@github.com:arwineap/rtsp-hls.git
       private_key: ((git-credentials.id_rsa))
   - name: ctr-rtsp-hls
     type: docker-image
