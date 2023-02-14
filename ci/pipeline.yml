@@ -4,6 +4,7 @@ jobs:
     plan:
       - get: git-rtsp-hls
         trigger: true
+      - get: git-k8s
       - put: ctr-rtsp-hls
         params:
           build: git-rtsp-hls
