@@ -9,12 +9,33 @@ jobs:
           build: git-rtsp-hls
           build_args:
             BITBUCKET_READ_TOKEN: ((bitbucket-read-token.token))
+  - name: deploy
+    plan:
+      - get: git-rtsp-hls
+        passed: ['build']
+        trigger: true
+      - get: git-k8s
+        passed: ['build']
+      - task: rollout
+        file: git-rtsp-hls/ci/deploy.yml
+        input_mapping: { k8s_repo: git-k8s }
+        params:
+          kubectl_file: ((kube-token.kube_config))
+          namespace: providence
+          deployment: deployment/rtsp-hls
+          k8s_apply_dir: providence/rtsp-hls
+
 
 resources:
   - name: git-rtsp-hls
     type: git
     source:
       uri: https://github.com/arwineap/rtsp-hls.git
+  - name: git-k8s
+    type: git
+    source:
+      uri: git@bitbucket.org:arwineap/k8s.git
+      private_key: ((git-credentials.id_rsa))
   - name: ctr-rtsp-hls
     type: docker-image
     icon: docker

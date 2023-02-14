@@ -1,0 +1,31 @@
+---
+platform: linux
+image_resource:
+  type: registry-image
+  source:
+    repository: alpine/k8s
+
+
+params:
+  kubectl_file: unset
+  namespace: unset
+  deployment: unset
+  k8s_apply_dir: unset
+
+inputs:
+  - name: k8s_repo
+
+run:
+  path: bash
+  args:
+    - -c
+    - |
+      if [[ "${kubectl_file}" == "unset" || "${namespace}" == "unset" || "${deployment}" == "unset" || "${k8s_apply_dir}" == "unset" ]]; then
+        echo "kubectl_file is a required parameter"
+        exit 1
+      fi
+      mkdir ~/.kube
+      echo "${kubectl_file}" > ~/.kube/config
+      kubectl apply -f "./k8s_repo/${k8s_apply_dir}"
+      kubectl -n ${namespace} rollout restart ${deployment}
+      kubectl -n ${namespace} rollout status ${deployment}
