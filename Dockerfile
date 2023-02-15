@@ -7,4 +7,4 @@ RUN go build -o /app main.go
 
 FROM docker.rexcreation.net/opencv-yolo:latest
 COPY --from=build /app /app
-CMD ["./app"]
+CMD ["/app"]
